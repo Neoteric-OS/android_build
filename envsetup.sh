@@ -44,12 +44,6 @@ Invoke ". build/envsetup.sh" from your shell to add the following functions to y
 - refreshmod: Refresh list of modules for allmod/gomod/pathmod/outmod/installmod.
 - syswrite:   Remount partitions (e.g. system.img) as writable, rebooting if necessary.
 
-EOF
-
-    __print_aospa_functions_help
-
-cat <<EOF
-
 Environment options:
 - SANITIZE_HOST: Set to 'address' to use ASAN for all host modules.
 - ANDROID_QUIET_BUILD: set to 'true' to display only the essential messages.
@@ -59,7 +53,7 @@ EOF
     local T=$(gettop)
     local A=""
     local i
-    for i in `cat $T/build/envsetup.sh $T/vendor/aospa/build/envsetup.sh | sed -n "/^[[:blank:]]*function /s/function \([a-z_]*\).*/\1/p" | sort | uniq`; do
+    for i in `cat $T/build/envsetup.sh | sed -n "/^[[:blank:]]*function /s/function \([a-z_]*\).*/\1/p" | sort | uniq`; do
       A="$A $i"
     done
     echo $A
@@ -70,8 +64,8 @@ function build_build_var_cache()
 {
     local T=$(gettop)
     # Grep out the variable names from the script.
-    cached_vars=(`cat $T/build/envsetup.sh $T/vendor/aospa/build/envsetup.sh | tr '()' '  ' | awk '{for(i=1;i<=NF;i++) if($i~/get_build_var/) print $(i+1)}' | sort -u | tr '\n' ' '`)
-    cached_abs_vars=(`cat $T/build/envsetup.sh $T/vendor/aospa/build/envsetup.sh | tr '()' '  ' | awk '{for(i=1;i<=NF;i++) if($i~/get_abs_build_var/) print $(i+1)}' | sort -u | tr '\n' ' '`)
+    cached_vars=(`cat $T/build/envsetup.sh | tr '()' '  ' | awk '{for(i=1;i<=NF;i++) if($i~/get_build_var/) print $(i+1)}' | sort -u | tr '\n' ' '`)
+    cached_abs_vars=(`cat $T/build/envsetup.sh | tr '()' '  ' | awk '{for(i=1;i<=NF;i++) if($i~/get_abs_build_var/) print $(i+1)}' | sort -u | tr '\n' ' '`)
     # Call the build system to dump the "<val>=<value>" pairs as a shell script.
     build_dicts_script=`\builtin cd $T; build/soong/soong_ui.bash --dumpvars-mode \
                         --vars="${cached_vars[*]}" \
@@ -153,13 +147,6 @@ function check_product()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
-    if (echo -n $1 | grep -q -e "^aospa_") ; then
-        AOSPA_BUILD=$(echo -n $1 | sed -e 's/^aospa_//g')
-    else
-        AOSPA_BUILD=
-    fi
-    export AOSPA_BUILD
-
         TARGET_PRODUCT=$1 \
         TARGET_BUILD_VARIANT= \
         TARGET_BUILD_TYPE= \
@@ -720,7 +707,7 @@ function lunch()
         answer=$1
     else
         print_lunch_menu
-        echo "Which would you like?"
+        echo "Which would you like? [aosp_arm-eng]"
         echo -n "Pick from common choices above (e.g. 13) or specify your own (e.g. aosp_barbet-eng): "
         read answer
         used_lunch_menu=1
@@ -730,8 +717,7 @@ function lunch()
 
     if [ -z "$answer" ]
     then
-        echo -n "\nI didn't understand your response. Please try again.\n"
-        lunch
+        selection=aosp_arm-eng
     elif (echo -n $answer | grep -q -e "^[0-9][0-9]*$")
     then
         local choices=($(TARGET_BUILD_APPS= get_build_var COMMON_LUNCH_CHOICES))
@@ -768,37 +754,12 @@ function lunch()
         return 1
     fi
 
-    check_product $product
-    if [ $? -ne 0 ]
-    then
-        # if we can't find a product, try to grab it off the AOSPA github
-        T=$(gettop)
-        cd $T > /dev/null
-        vendor/aospa/build/tools/roomservice.py $product
-        cd - > /dev/null
-        check_product $product
-    else
-        T=$(gettop)
-        cd $T > /dev/null
-        vendor/aospa/build/tools/roomservice.py $product true
-        cd - > /dev/null
-    fi
-
     TARGET_PRODUCT=$product \
     TARGET_BUILD_VARIANT=$variant \
     TARGET_PLATFORM_VERSION=$version \
     build_build_var_cache
     if [ $? -ne 0 ]
     then
-        echo
-        echo "** Don't have a product spec for: '$product'"
-        echo "** Do you have the right repo manifest?"
-        product=
-    fi
-
-    if [ -z "$product" -o -z "$variant" ]
-    then
-        echo
         if [[ "$product" =~ .*_(eng|user|userdebug) ]]
         then
             echo "Did you mean -${product/*_/}? (dash instead of underscore)"
@@ -806,9 +767,7 @@ function lunch()
         return 1
     fi
     export TARGET_PRODUCT=$(get_build_var TARGET_PRODUCT)
-    export TARGET_BOARD_PLATFORM=$(get_build_var TARGET_BOARD_PLATFORM)
     export TARGET_BUILD_VARIANT=$(get_build_var TARGET_BUILD_VARIANT)
-    export PLATFORM_VERSION=$(get_build_var PLATFORM_VERSION)
     if [ -n "$version" ]; then
       export TARGET_PLATFORM_VERSION=$(get_build_var TARGET_PLATFORM_VERSION)
     else
@@ -1119,7 +1078,7 @@ function coredump_enable()
         return;
     fi;
     echo "Setting core limit for $PID to infinite...";
-    adb shell /system/bin/ulimit -p $PID -c unlimited
+    adb shell /system/bin/ulimit -P $PID -c unlimited
 }
 
 # core - send SIGV and pull the core for process
@@ -1822,43 +1781,6 @@ function _wrap_build()
     return $ret
 }
 
-function call_hook
-{
-    if [ "$2" = "-h" ] ||[ "$2" = "clean" ] ||[ "$2" = "--help" ]; then
-        return 0
-    fi
-    local T=$(gettop)
-    local ARGS
-    if [ "$T" ]; then
-        if [ "$1" = "m" ] ||  [ "$1" = "make" ] || [ "$1" = "mma" ] ||  [ "$1" = "mmma" ]; then
-            ARGS=$T
-        elif [ "$1" = "mm" ]; then
-            ARGS=`/bin/pwd`
-        elif [ "$1" = "mmm" ]; then
-            local DIRS=$(echo "${@:2}" | awk -v RS=" " -v ORS=" " '/^[^-].*$/')
-            local prefix=`/bin/pwd`
-            for dir in $DIRS
-            do
-                ARGS+=$prefix"/"$dir" "
-            done
-            echo $ARGS
-        fi
-        if [ -e $T/${QCPATH}/common/restriction_checker/restriction_checker.py ]; then
-            python $T/${QCPATH}/common/restriction_checker/restriction_checker.py $T $ARGS
-        else
-            echo "Restriction Checker not present, skipping.."
-        fi
-        local ret_val=$?
-        if [ $ret_val -ne 0 ]; then
-            echo "Violations detected, aborting build."
-        fi
-        return $ret_val
-    else
-        echo "Couldn't locate the top of the tree.  Try setting TOP."
-        return 1
-    fi
-}
-
 function _trigger_build()
 (
     local -r bc="$1"; shift
@@ -1887,51 +1809,26 @@ function b()
 
 function m()
 (
-    call_hook ${FUNCNAME[0]} $@
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
     _trigger_build "all-modules" "$@"
 )
 
 function mm()
 (
-    call_hook ${FUNCNAME[0]} $@
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
     _trigger_build "modules-in-a-dir-no-deps" "$@"
 )
 
 function mmm()
 (
-    call_hook ${FUNCNAME[0]} $@
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
     _trigger_build "modules-in-dirs-no-deps" "$@"
 )
 
 function mma()
 (
-    call_hook ${FUNCNAME[0]} $@
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
     _trigger_build "modules-in-a-dir" "$@"
 )
 
 function mmma()
 (
-    call_hook ${FUNCNAME[0]} $@
-    if [ $? -ne 0 ]; then
-        return 1
-    fi
-
     _trigger_build "modules-in-dirs" "$@"
 )
 
@@ -2066,6 +1963,20 @@ validate_current_shell
 source_vendorsetup
 addcompletions
 
-export ANDROID_BUILD_TOP=$(gettop)
+# check and set ccache path on envsetup
+if [ -z ${CCACHE_EXEC} ]; then
+    ccache_path=$(which ccache)
+    if [ ! -z "$ccache_path" ]; then
+	export USE_CCACHE=1
+        export CCACHE_EXEC="$ccache_path"
+        if [ -z ${CCACHE_DIR} ]; then
+            export CCACHE_DIR=${HOME}/.ccache
+        fi
+        $ccache_path -o compression=true
+	echo -e "\e[1mccache enabled and \e[32m\e[4mCCACHE_EXEC\e[0m \e[1mhas been set to : \e[4m$ccache_path\e[0m"
+    else
+        echo -e "\e[31m\e[1mccache not found/installed!\e[0m"
+    fi
+fi
 
-. $ANDROID_BUILD_TOP/vendor/aospa/build/envsetup.sh
+export ANDROID_BUILD_TOP=$(gettop)
