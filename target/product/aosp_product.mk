@@ -19,9 +19,7 @@ $(call inherit-product, $(SRC_TARGET_DIR)/product/handheld_product.mk)
 $(call inherit-product, $(SRC_TARGET_DIR)/product/telephony_product.mk)
 
 # Default AOSP sounds
-ifeq ($(AOSPA_BUILD),)
 $(call inherit-product-if-exists, frameworks/base/data/sounds/AllAudio.mk)
-endif
 
 # Additional settings used in all AOSP builds
 PRODUCT_PRODUCT_PROPERTIES += \
@@ -34,11 +32,4 @@ PRODUCT_PACKAGES += \
     messaging \
     PhotoTable \
     preinstalled-packages-platform-aosp-product.xml \
-    WallpaperPicker \
-
-# Telephony:
-#   Provide a APN configuration to GSI product
-ifeq ($(AOSPA_BUILD),)
-PRODUCT_COPY_FILES += \
-    device/sample/etc/apns-full-conf.xml:$(TARGET_COPY_OUT_PRODUCT)/etc/apns-conf.xml
-endif
+    WallpaperPicker

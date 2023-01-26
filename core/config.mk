@@ -359,9 +359,7 @@ include $(BUILD_SYSTEM)/envsetup.mk
 # See envsetup.mk for a description of SCAN_EXCLUDE_DIRS
 FIND_LEAVES_EXCLUDES := $(addprefix --prune=, $(SCAN_EXCLUDE_DIRS) .repo .git)
 
-ifneq ($(AOSPA_BUILD),)
-include vendor/aospa/target/board/BoardConfigAOSPA.mk
-endif
+include vendor/zephyrus/target/board/BoardConfigZeph.mk
 
 # The build system exposes several variables for where to find the kernel
 # headers:
