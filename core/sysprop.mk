@@ -206,7 +206,7 @@ BUILD_THUMBPRINT :=
 BUILD_DESC := $(TARGET_PRODUCT)-$(TARGET_BUILD_VARIANT) $(PLATFORM_VERSION) $(BUILD_ID) $(BUILD_NUMBER_FROM_FILE) $(BUILD_VERSION_TAGS)
 
 # BUILD_DISPLAY_ID is shown under Settings -> About Phone
-BUILD_DISPLAY_ID := $(BUILD_ID) $(BUILD_KEYS)
+BUILD_DISPLAY_ID := $(BUILD_ID)
 
 # TARGET_BUILD_FLAVOR and ro.build.flavor are used only by the test
 # harness to distinguish builds. Only add _asan for a sanitized build
