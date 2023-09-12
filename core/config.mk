@@ -359,7 +359,7 @@ include $(BUILD_SYSTEM)/envsetup.mk
 # See envsetup.mk for a description of SCAN_EXCLUDE_DIRS
 FIND_LEAVES_EXCLUDES := $(addprefix --prune=, $(SCAN_EXCLUDE_DIRS) .repo .git)
 
-include vendor/zephyrus/target/board/BoardConfigZeph.mk
+include vendor/neoteric/target/board/BoardConfigNeoteric.mk
 
 # The build system exposes several variables for where to find the kernel
 # headers:
@@ -1260,10 +1260,10 @@ endif
 # in the source tree.
 dont_bother_goals := out product-graph
 
-ifneq ($(wildcard device/zephyrus/sepolicy/common/sepolicy.mk),)
+ifneq ($(wildcard device/neoteric/sepolicy/common/sepolicy.mk),)
 ## We need to be sure the global selinux policies are included
 ## last, to avoid accidental resetting by device configs
-$(eval include device/zephyrus/sepolicy/common/sepolicy.mk)
+$(eval include device/neoteric/sepolicy/common/sepolicy.mk)
 endif
 
 # Make ANDROID Soong config variables visible to Android.mk files, for

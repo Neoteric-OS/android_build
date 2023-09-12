@@ -57,6 +57,6 @@ if [ -n "$BUILD_THUMBPRINT" ] ; then
   echo "ro.build.thumbprint=$BUILD_THUMBPRINT"
 fi
 
-echo "ro.zephyrus.device=$ZEPHYRUS_DEVICE"
+echo "ro.neoteric.device=$NEOTERIC_DEVICE"
 
 echo "# end build properties"
