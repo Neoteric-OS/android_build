@@ -210,12 +210,6 @@ function check_product()
         echo "Couldn't locate the top of the tree.  Try setting TOP." >&2
         return
     fi
-    if (echo -n $1 | grep -q -e "^aospa_") ; then
-        AOSPA_BUILD=$(echo -n $1 | sed -e 's/^aospa_//g')
-    else
-        AOSPA_BUILD=
-    fi
-    export AOSPA_BUILD
 
         TARGET_PRODUCT=$1 \
         TARGET_BUILD_VARIANT= \
@@ -832,24 +826,6 @@ function lunch()
         echo
         echo "Invalid lunch combo: $selection"
         return 1
-    fi
-
-    check_product $product
-    if [ $? -ne 0 ]
-    then
-        # if we can't find a product, try to grab it off the AOSPA github
-        T=$(gettop)
-        cd $T > /dev/null
-        vendor/aospa/build/tools/roomservice.py $product
-        cd - > /dev/null
-        # execute contents of vendorsetup.sh files if exists in the product repos
-        source_vendorsetup
-        check_product $product
-    else
-        T=$(gettop)
-        cd $T > /dev/null
-        vendor/aospa/build/tools/roomservice.py $product true
-        cd - > /dev/null
     fi
 
     TARGET_PRODUCT=$product \
