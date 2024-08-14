@@ -110,6 +110,8 @@ $(call add_json_str,  AAPTPreferredConfig,               $(PRODUCT_AAPT_PREF_CON
 $(call add_json_list, AAPTPrebuiltDPI,                   $(PRODUCT_AAPT_PREBUILT_DPI))
 
 $(call add_json_str,  DefaultAppCertificate,             $(PRODUCT_DEFAULT_DEV_CERTIFICATE))
+$(call add_json_list, ExtraOtaKeys,                      $(PRODUCT_EXTRA_OTA_KEYS))
+$(call add_json_list, ExtraOtaRecoveryKeys,              $(PRODUCT_EXTRA_RECOVERY_KEYS))
 $(call add_json_str,  MainlineSepolicyDevCertificates,   $(MAINLINE_SEPOLICY_DEV_CERTIFICATES))
 
 $(call add_json_str,  AppsDefaultVersionName,            $(APPS_DEFAULT_VERSION_NAME))
@@ -383,6 +385,12 @@ $(call add_json_bool, BoardUseVbmetaDigestInFingerprint, $(filter true,$(BOARD_U
 $(call add_json_list, OemProperties, $(PRODUCT_OEM_PROPERTIES))
 
 $(call add_json_bool, DisableSoongConfigTrace, $(filter true,$(DISABLE_SOONG_CONFIG_TRACE)))
+
+# Do not set ArtTargetIncludeDebugBuild into any value if PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD is not set,
+# to have the same behavior from runtime_libart.mk.
+ifneq ($(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD),)
+$(call add_json_bool, ArtTargetIncludeDebugBuild, $(PRODUCT_ART_TARGET_INCLUDE_DEBUG_BUILD))
+endif
 
 $(call json_end)
 
