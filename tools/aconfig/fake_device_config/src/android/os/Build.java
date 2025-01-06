@@ -14,19 +14,10 @@
  * limitations under the License.
  */
 
-package android.os.flagging;
+package android.os;
 
-/*
- * This class allows generated aconfig code to compile independently of the framework.
- */
-public class PlatformAconfigPackageInternal {
-
-    public static PlatformAconfigPackageInternal load(
-            String container, String packageName, long packageFingerprint) {
-        throw new UnsupportedOperationException("Stub!");
-    }
-
-    public boolean getBooleanFlagValue(int index) {
-        throw new UnsupportedOperationException("Stub!");
+public class Build {
+    public static class VERSION {
+        public static final int SDK_INT = 0;
     }
 }
