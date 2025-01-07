@@ -33,7 +33,9 @@ import test_discovery_agent
 REQUIRED_ENV_VARS = frozenset(['TARGET_PRODUCT', 'TARGET_RELEASE', 'TOP', 'DIST_DIR'])
 SOONG_UI_EXE_REL_PATH = 'build/soong/soong_ui.bash'
 LOG_PATH = 'logs/build_test_suites.log'
-REQUIRED_BUILD_TARGETS = frozenset(['dist'])
+# Currently, this prevents the removal of those tags when they exist. In the future we likely
+# want the script to supply 'dist directly
+REQUIRED_BUILD_TARGETS = frozenset(['dist', 'droid', 'checkbuild'])
 
 
 class Error(Exception):
@@ -72,6 +74,12 @@ class BuildPlanner:
     if 'optimized_build' not in self.build_context.enabled_build_features:
       return BuildPlan(set(self.args.extra_targets), set())
 
+    if not self.build_context.test_infos:
+      logging.warning('Build context has no test infos, skipping optimizations.')
+      for target in self.args.extra_targets:
+        get_metrics_agent().report_unoptimized_target(target, 'BUILD_CONTEXT has no test infos.')
+      return BuildPlan(set(self.args.extra_targets), set())
+
     build_targets = set()
     packaging_commands_getters = []
     # In order to roll optimizations out differently between test suites and
@@ -104,6 +112,9 @@ class BuildPlanner:
         if optimization_rationale:
           get_metrics_agent().report_unoptimized_target(target, optimization_rationale)
           continue
+        if target in REQUIRED_BUILD_TARGETS:
+          get_metrics_agent().report_unoptimized_target(target, 'Required build target.')
+          continue
         try:
           regex = r'\b(%s.*)\b' % re.escape(target)
           if any(re.search(regex, opt) for opt in test_discovery_zip_regexes):
@@ -112,6 +123,7 @@ class BuildPlanner:
           get_metrics_agent().report_optimized_target(target)
         except Exception as e:
           logging.error(f'unable to parse test discovery output: {repr(e)}')
+          get_metrics_agent().report_unoptimized_target(target, f'Error in parsing test discovery output for {target}: {repr(e)}')
 
     for target in preliminary_build_targets:
       target_optimizer_getter = self.target_optimizations.get(target, None)
@@ -145,6 +157,7 @@ class BuildPlanner:
     for target in self.args.extra_targets:
       if target in REQUIRED_BUILD_TARGETS:
         build_targets.add(target)
+        get_metrics_agent().report_unoptimized_target(target, 'Required build target.')
         continue
 
       regex = r'\b(%s.*)\b' % re.escape(target)
@@ -153,13 +166,15 @@ class BuildPlanner:
           if re.search(regex, opt):
             get_metrics_agent().report_unoptimized_target(target, 'Test artifact used.')
             build_targets.add(target)
-            continue
+            # proceed to next target evaluation
+            break
           get_metrics_agent().report_optimized_target(target)
         except Exception as e:
           # In case of exception report as unoptimized
           build_targets.add(target)
           get_metrics_agent().report_unoptimized_target(target, f'Error in parsing test discovery output for {target}: {repr(e)}')
           logging.error(f'unable to parse test discovery output: {repr(e)}')
+          break
 
     return build_targets
 
