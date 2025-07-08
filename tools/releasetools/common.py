@@ -3679,6 +3679,9 @@ class BlockDifference(object):
     call = 'run_program("/system/bin/rm", "-rf", "/data/system/package_cache");'
     script.AppendExtra(script.WordWrap(call))
 
+    call = 'run_program("/system/bin/rm", "-rf", "/data/resource-cache");'
+    script.AppendExtra(script.WordWrap(call))
+
   def _HashBlocks(self, source, ranges):  # pylint: disable=no-self-use
     data = source.ReadRangeSet(ranges)
     ctx = sha1()
