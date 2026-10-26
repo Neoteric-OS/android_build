@@ -292,6 +292,8 @@ ifneq ($(MALLOC_IMPL),)
 endif
 board_config_mk :=
 
+-include vendor/neoteric/target/board/BoardConfigNeoteric.mk
+
 # Clean up and verify BoardConfig variables
 $(foreach var,$(_board_strip_readonly_list),$(eval $(var) := $$(strip $$($(var)))))
 $(foreach var,$(_board_strip_list),$(eval $(var) := $$(strip $$($(var)))))
