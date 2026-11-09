@@ -6118,8 +6118,8 @@ ifneq (,$(strip $(BOARD_CUSTOMIMAGES_PARTITION_LIST)))
 		) \
 	)
 endif
-	$(hide) echo "reboot fastboot" >> $@
 	$(hide) echo "update-super" >> $@
+	$(hide) echo "reboot fastboot" >> $@
 	$(hide) $(foreach partition,$(BOARD_SUPER_PARTITION_PARTITION_LIST), \
 	  echo "flash $(partition)" >> $@;)
 ifdef BUILDING_SYSTEM_OTHER_IMAGE
